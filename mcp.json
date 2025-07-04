@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ai-tool-mcp": {
+      "command": "G:\\docker\\McpApi\\ai-tool-mcp\\.venv\\Scripts\\python.exe",
+      "args": ["G:\\docker\\McpApi\\ai-tool-mcp\\server.py"],
+      "cwd": "G:\\docker\\McpApi\\ai-tool-mcp"
+    }
+  }
+}
