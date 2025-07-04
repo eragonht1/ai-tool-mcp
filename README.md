@@ -27,6 +27,7 @@
 - 进程和服务状态
 - GPU信息（如果可用）
 - 实时系统信息
+- 开发环境信息（Python、Node.js版本和路径）
 
 ## 安装配置
 
@@ -93,8 +94,21 @@ download_files(
 
 ### 系统监控
 ```python
-# 获取系统信息
-system_info = system_get_system_info()
+# 获取基本系统信息（仅安全信息）
+basic_info = system_get_basic_system_info()
+
+# 获取完整系统信息（包含详细信息）
+full_info = system_get_system_info()
+
+# 获取系统信息（可选择详细程度）
+system_info = system_get_system_info(basic_only=True)  # 仅基本信息
+system_info = system_get_system_info(basic_only=False) # 详细信息
+
+# 基本信息包含：
+# - 操作系统、计算机名、处理器、频率
+# - 显卡型号、显存、内存使用情况
+# - IP地址、DNS服务器
+# - Python和Node.js开发环境信息
 ```
 
 ## 安全特性

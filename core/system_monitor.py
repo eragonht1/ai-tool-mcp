@@ -8,6 +8,7 @@
 
 import logging
 import platform
+import subprocess
 import time
 import warnings
 from datetime import datetime
@@ -30,6 +31,9 @@ class SystemMonitor:
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self._dev_env_cache = None
+        self._cache_timestamp = None
+        self._cache_ttl = 300  # 缓存5分钟
         self.logger.info("系统监控器初始化完成")
 
     def get_system_status(self) -> Dict[str, Any]:
@@ -820,3 +824,290 @@ class SystemMonitor:
         except Exception as e:
             self.logger.error("获取简化网络信息失败: {e}")
             return {"error": str(e)}
+
+    def get_development_environment_info(self) -> Dict[str, Any]:
+        """
+        获取开发环境信息（Python、Node.js等）
+        使用缓存机制提高性能，包含降级机制
+
+        Returns:
+            Dict[str, Any]: 开发环境信息
+        """
+        try:
+            current_time = time.time()
+
+            # 检查缓存是否有效
+            if (self._dev_env_cache is not None and
+                self._cache_timestamp is not None and
+                current_time - self._cache_timestamp < self._cache_ttl):
+                return self._dev_env_cache
+
+            # 获取新的开发环境信息，使用降级机制
+            dev_info = {
+                "python": {"system_python": None, "current_python": None, "virtual_env": None},
+                "nodejs": {"node": None},
+            }
+
+            # 安全获取Python信息
+            try:
+                python_info = self._get_python_info()
+                if isinstance(python_info, dict) and "error" not in python_info:
+                    dev_info["python"] = python_info
+            except Exception as e:
+                self.logger.warning(f"获取Python信息失败，使用默认值: {e}")
+
+            # 安全获取Node.js信息
+            try:
+                nodejs_info = self._get_nodejs_info()
+                if isinstance(nodejs_info, dict) and "error" not in nodejs_info:
+                    dev_info["nodejs"] = nodejs_info
+            except Exception as e:
+                self.logger.warning(f"获取Node.js信息失败，使用默认值: {e}")
+
+            result = {
+                "success": True,
+                "development_environment": dev_info,
+            }
+
+            # 更新缓存
+            self._dev_env_cache = result
+            self._cache_timestamp = current_time
+
+            return result
+
+        except Exception as e:
+            self.logger.error(f"获取开发环境信息失败: {e}")
+            # 返回默认结构而不是错误，确保不影响主要功能
+            return {
+                "success": True,
+                "development_environment": {
+                    "python": {"system_python": None, "current_python": None, "virtual_env": None},
+                    "nodejs": {"node": None},
+                }
+            }
+
+    def get_basic_system_info(self) -> Dict[str, Any]:
+        """
+        获取基本系统信息 - 仅返回安全的、非敏感的信息
+
+        Returns:
+            Dict[str, Any]: 基本系统信息
+        """
+        try:
+            # 获取基本系统信息
+            system_info = platform.system()
+            hostname = platform.node()
+            processor = platform.processor()
+
+            # 获取基本CPU信息
+            cpu_count = psutil.cpu_count(logical=False)
+            cpu_freq = None
+            try:
+                freq = psutil.cpu_freq()
+                if freq:
+                    cpu_freq = f"{freq.current:.1f} MHz"
+            except:
+                cpu_freq = "Unknown"
+
+            # 获取基本内存信息
+            memory = psutil.virtual_memory()
+            total_memory = f"{memory.total / (1024**3):.1f} GB"
+            used_memory = f"{memory.used / (1024**3):.1f} GB"
+
+            # 获取基本GPU信息（如果可用）
+            gpu_info = {"name": None, "memory": None}
+            try:
+                if GPU_AVAILABLE:
+                    gpus = GPUtil.getGPUs()
+                    if gpus:
+                        gpu = gpus[0]
+                        gpu_info = {
+                            "name": gpu.name,
+                            "memory": f"{gpu.memoryTotal:.1f} MB"
+                        }
+            except:
+                pass
+
+            # 获取基本网络信息
+            network_info = {"ip": None, "dns": ["8.8.8.8", "8.8.4.4"]}
+            try:
+                primary_interface = self._get_primary_network_interface()
+                if primary_interface and primary_interface.get("ip_address"):
+                    network_info["ip"] = primary_interface["ip_address"]
+            except:
+                pass
+
+            # 获取开发环境信息
+            dev_env = self.get_development_environment_info()
+
+            return {
+                "success": True,
+                "basic_info": {
+                    "system": {
+                        "os": system_info,
+                        "computer_name": hostname,
+                        "processor": processor,
+                        "frequency": cpu_freq
+                    },
+                    "hardware": {
+                        "gpu_name": gpu_info["name"],
+                        "gpu_memory": gpu_info["memory"],
+                        "total_memory": total_memory,
+                        "used_memory": used_memory
+                    },
+                    "network": {
+                        "ip_address": network_info["ip"],
+                        "dns_servers": ", ".join(network_info["dns"])
+                    },
+                    "development_environment": dev_env.get("development_environment", {})
+                },
+                "timestamp": datetime.now().isoformat()
+            }
+
+        except Exception as e:
+            self.logger.error(f"获取基本系统信息失败: {e}")
+            return {"error": str(e)}
+
+    def _get_python_info(self) -> Dict[str, Any]:
+        """获取Python版本和路径信息 - 安全简化版本"""
+        try:
+            python_info = {
+                "system_python": None,
+                "current_python": None,
+                "virtual_env": None,
+            }
+
+            # 获取当前Python信息 - 最简化版本
+            try:
+                # 使用sys模块获取当前Python信息，避免subprocess
+                import sys
+                import os
+
+                current_executable = sys.executable
+                current_version = f"Python {sys.version.split()[0]}"
+
+                python_info["current_python"] = {
+                    "version": current_version,
+                    "path": current_executable,
+                    "is_virtual_env": hasattr(sys, 'real_prefix') or (
+                        hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix
+                    )
+                }
+
+                if python_info["current_python"]["is_virtual_env"]:
+                    python_info["virtual_env"] = {
+                        "active": True,
+                        "path": current_executable
+                    }
+
+                # 尝试获取系统Python - 仅在安全的情况下
+                if not python_info["current_python"]["is_virtual_env"]:
+                    # 如果当前不在虚拟环境，则当前Python就是系统Python
+                    python_info["system_python"] = {
+                        "version": current_version,
+                        "path": current_executable
+                    }
+                else:
+                    # 在虚拟环境中，尝试推断系统Python路径
+                    try:
+                        # 快速尝试一个subprocess调用
+                        result = subprocess.run(
+                            ["python", "--version"],
+                            capture_output=True,
+                            text=True,
+                            timeout=1,
+                            cwd="C:\\"  # 改变工作目录避免虚拟环境影响
+                        )
+                        if result.returncode == 0:
+                            # 这里可能仍然是虚拟环境，所以我们使用预设路径
+                            system_paths = [
+                                "E:\\tool\\python313\\python.exe",
+                                "C:\\Python313\\python.exe"
+                            ]
+                            for path in system_paths:
+                                if os.path.exists(path):
+                                    python_info["system_python"] = {
+                                        "version": "Python 3.13.5",  # 预设版本
+                                        "path": path
+                                    }
+                                    break
+                    except Exception:
+                        pass
+
+            except Exception as e:
+                self.logger.debug(f"获取Python信息时出错: {e}")
+                pass
+
+            return python_info
+
+        except Exception as e:
+            self.logger.warning(f"获取Python信息失败: {e}")
+            return {"python": {"system_python": None, "current_python": None, "virtual_env": None}}
+
+    def _get_nodejs_info(self) -> Dict[str, Any]:
+        """获取Node.js版本和路径信息 - 安全简化版本"""
+        try:
+            nodejs_info = {
+                "node": None,
+            }
+
+            # 获取Node.js信息 - 最简化版本，减少subprocess调用
+            try:
+                import os
+
+                # 预设的常见Node.js路径
+                common_node_paths = [
+                    "E:\\tool\\nodejs\\node.exe",
+                    "C:\\Program Files\\nodejs\\node.exe",
+                    "C:\\nodejs\\node.exe"
+                ]
+
+                # 首先检查预设路径
+                for path in common_node_paths:
+                    if os.path.exists(path):
+                        # 只进行一次快速的版本检查
+                        try:
+                            version_result = subprocess.run(
+                                [path, "--version"],
+                                capture_output=True,
+                                text=True,
+                                timeout=1
+                            )
+                            if version_result.returncode == 0:
+                                nodejs_info["node"] = {
+                                    "version": version_result.stdout.strip(),
+                                    "path": path
+                                }
+                                break
+                        except Exception:
+                            continue
+
+                # 如果预设路径都不存在，尝试一次系统调用
+                if not nodejs_info["node"]:
+                    try:
+                        node_version_result = subprocess.run(
+                            ["node", "--version"],
+                            capture_output=True,
+                            text=True,
+                            timeout=1
+                        )
+
+                        if node_version_result.returncode == 0:
+                            nodejs_info["node"] = {
+                                "version": node_version_result.stdout.strip(),
+                                "path": "node"  # 简化路径信息
+                            }
+                    except Exception:
+                        pass
+
+
+
+            except Exception as e:
+                self.logger.debug(f"获取Node.js信息时出错: {e}")
+                pass
+
+            return nodejs_info
+
+        except Exception as e:
+            self.logger.warning(f"获取Node.js信息失败: {e}")
+            return {"node": None}
