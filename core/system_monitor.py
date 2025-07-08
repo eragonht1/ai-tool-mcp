@@ -402,7 +402,7 @@ class SystemMonitor:
             str: 格式化后的字符串，如 "2天5小时30分钟"
         """
         if seconds < 60:
-            return "{int(seconds)}秒"
+            return f"{int(seconds)}秒"
 
         minutes = int(seconds // 60)
         hours = int(minutes // 60)
@@ -413,11 +413,11 @@ class SystemMonitor:
 
         if days > 0:
             if remaining_hours > 0:
-                return "{days}天{remaining_hours}小时{remaining_minutes}分钟"
-            return "{days}天{remaining_minutes}分钟"
+                return f"{days}天{remaining_hours}小时{remaining_minutes}分钟"
+            return f"{days}天{remaining_minutes}分钟"
         elif hours > 0:
-            return "{hours}小时{remaining_minutes}分钟"
-        return "{minutes}分钟"
+            return f"{hours}小时{remaining_minutes}分钟"
+        return f"{minutes}分钟"
 
     def _evaluate_system_status(
         self, cpu_percent: float, memory_percent: float, disk_percent: float
@@ -509,7 +509,7 @@ class SystemMonitor:
                 "speed": 0,
             }
 
-        except Exception as e:
+        except Exception:
             self.logger.warning("获取主要网络接口失败: {e}")
             return {
                 "name": "Error",
@@ -556,7 +556,10 @@ class SystemMonitor:
             # 格式化数据
             computer_info = {
                 "system": {
-                    "os": f"{system_info.get('system', 'Unknown')} {system_info.get('release', '')}".strip(),
+                    "os": (
+                        f"{system_info.get('system', 'Unknown')} "
+                        f"{system_info.get('release', '')}"
+                    ).strip(),
                     "computer_name": system_info.get("hostname", "Unknown"),
                     "uptime": self._format_uptime_to_readable(
                         boot_time_info.get("uptime_seconds", 0)
@@ -679,7 +682,7 @@ class SystemMonitor:
                         "ip_address": primary_interface["ip_address"],
                         "mac_address": primary_interface["mac_address"],
                         "speed": speed_str,
-                        "signal_strength": None,  # 无线信号强度需要额外获取，暂时设为None
+                        "signal_strength": None,  # 无线信号强度需要额外获取
                     }
                 )
 
@@ -837,14 +840,20 @@ class SystemMonitor:
             current_time = time.time()
 
             # 检查缓存是否有效
-            if (self._dev_env_cache is not None and
-                self._cache_timestamp is not None and
-                current_time - self._cache_timestamp < self._cache_ttl):
+            if (
+                self._dev_env_cache is not None
+                and self._cache_timestamp is not None
+                and current_time - self._cache_timestamp < self._cache_ttl
+            ):
                 return self._dev_env_cache
 
             # 获取新的开发环境信息，使用降级机制
             dev_info = {
-                "python": {"system_python": None, "current_python": None, "virtual_env": None},
+                "python": {
+                    "system_python": None,
+                    "current_python": None,
+                    "virtual_env": None,
+                },
                 "nodejs": {"node": None},
             }
 
@@ -881,9 +890,13 @@ class SystemMonitor:
             return {
                 "success": True,
                 "development_environment": {
-                    "python": {"system_python": None, "current_python": None, "virtual_env": None},
+                    "python": {
+                        "system_python": None,
+                        "current_python": None,
+                        "virtual_env": None,
+                    },
                     "nodejs": {"node": None},
-                }
+                },
             }
 
     def get_basic_system_info(self) -> Dict[str, Any]:
@@ -900,13 +913,12 @@ class SystemMonitor:
             processor = platform.processor()
 
             # 获取基本CPU信息
-            cpu_count = psutil.cpu_count(logical=False)
             cpu_freq = None
             try:
                 freq = psutil.cpu_freq()
                 if freq:
                     cpu_freq = f"{freq.current:.1f} MHz"
-            except:
+            except Exception:
                 cpu_freq = "Unknown"
 
             # 获取基本内存信息
@@ -923,9 +935,9 @@ class SystemMonitor:
                         gpu = gpus[0]
                         gpu_info = {
                             "name": gpu.name,
-                            "memory": f"{gpu.memoryTotal:.1f} MB"
+                            "memory": f"{gpu.memoryTotal:.1f} MB",
                         }
-            except:
+            except Exception:
                 pass
 
             # 获取基本网络信息
@@ -934,7 +946,7 @@ class SystemMonitor:
                 primary_interface = self._get_primary_network_interface()
                 if primary_interface and primary_interface.get("ip_address"):
                     network_info["ip"] = primary_interface["ip_address"]
-            except:
+            except Exception:
                 pass
 
             # 获取开发环境信息
@@ -947,21 +959,23 @@ class SystemMonitor:
                         "os": system_info,
                         "computer_name": hostname,
                         "processor": processor,
-                        "frequency": cpu_freq
+                        "frequency": cpu_freq,
                     },
                     "hardware": {
                         "gpu_name": gpu_info["name"],
                         "gpu_memory": gpu_info["memory"],
                         "total_memory": total_memory,
-                        "used_memory": used_memory
+                        "used_memory": used_memory,
                     },
                     "network": {
                         "ip_address": network_info["ip"],
-                        "dns_servers": ", ".join(network_info["dns"])
+                        "dns_servers": ", ".join(network_info["dns"]),
                     },
-                    "development_environment": dev_env.get("development_environment", {})
+                    "development_environment": dev_env.get(
+                        "development_environment", {}
+                    ),
                 },
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
@@ -980,8 +994,8 @@ class SystemMonitor:
             # 获取当前Python信息 - 最简化版本
             try:
                 # 使用sys模块获取当前Python信息，避免subprocess
-                import sys
                 import os
+                import sys
 
                 current_executable = sys.executable
                 current_version = f"Python {sys.version.split()[0]}"
@@ -989,15 +1003,14 @@ class SystemMonitor:
                 python_info["current_python"] = {
                     "version": current_version,
                     "path": current_executable,
-                    "is_virtual_env": hasattr(sys, 'real_prefix') or (
-                        hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix
-                    )
+                    "is_virtual_env": hasattr(sys, "real_prefix")
+                    or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix),
                 }
 
                 if python_info["current_python"]["is_virtual_env"]:
                     python_info["virtual_env"] = {
                         "active": True,
-                        "path": current_executable
+                        "path": current_executable,
                     }
 
                 # 尝试获取系统Python - 仅在安全的情况下
@@ -1005,7 +1018,7 @@ class SystemMonitor:
                     # 如果当前不在虚拟环境，则当前Python就是系统Python
                     python_info["system_python"] = {
                         "version": current_version,
-                        "path": current_executable
+                        "path": current_executable,
                     }
                 else:
                     # 在虚拟环境中，尝试推断系统Python路径
@@ -1016,19 +1029,19 @@ class SystemMonitor:
                             capture_output=True,
                             text=True,
                             timeout=1,
-                            cwd="C:\\"  # 改变工作目录避免虚拟环境影响
+                            cwd="C:\\",  # 改变工作目录避免虚拟环境影响
                         )
                         if result.returncode == 0:
                             # 这里可能仍然是虚拟环境，所以我们使用预设路径
                             system_paths = [
                                 "E:\\tool\\python313\\python.exe",
-                                "C:\\Python313\\python.exe"
+                                "C:\\Python313\\python.exe",
                             ]
                             for path in system_paths:
                                 if os.path.exists(path):
                                     python_info["system_python"] = {
                                         "version": "Python 3.13.5",  # 预设版本
-                                        "path": path
+                                        "path": path,
                                     }
                                     break
                     except Exception:
@@ -1042,7 +1055,13 @@ class SystemMonitor:
 
         except Exception as e:
             self.logger.warning(f"获取Python信息失败: {e}")
-            return {"python": {"system_python": None, "current_python": None, "virtual_env": None}}
+            return {
+                "python": {
+                    "system_python": None,
+                    "current_python": None,
+                    "virtual_env": None,
+                }
+            }
 
     def _get_nodejs_info(self) -> Dict[str, Any]:
         """获取Node.js版本和路径信息 - 安全简化版本"""
@@ -1059,7 +1078,7 @@ class SystemMonitor:
                 common_node_paths = [
                     "E:\\tool\\nodejs\\node.exe",
                     "C:\\Program Files\\nodejs\\node.exe",
-                    "C:\\nodejs\\node.exe"
+                    "C:\\nodejs\\node.exe",
                 ]
 
                 # 首先检查预设路径
@@ -1071,12 +1090,12 @@ class SystemMonitor:
                                 [path, "--version"],
                                 capture_output=True,
                                 text=True,
-                                timeout=1
+                                timeout=1,
                             )
                             if version_result.returncode == 0:
                                 nodejs_info["node"] = {
                                     "version": version_result.stdout.strip(),
-                                    "path": path
+                                    "path": path,
                                 }
                                 break
                         except Exception:
@@ -1089,18 +1108,16 @@ class SystemMonitor:
                             ["node", "--version"],
                             capture_output=True,
                             text=True,
-                            timeout=1
+                            timeout=1,
                         )
 
                         if node_version_result.returncode == 0:
                             nodejs_info["node"] = {
                                 "version": node_version_result.stdout.strip(),
-                                "path": "node"  # 简化路径信息
+                                "path": "node",  # 简化路径信息
                             }
                     except Exception:
                         pass
-
-
 
             except Exception as e:
                 self.logger.debug(f"获取Node.js信息时出错: {e}")

@@ -74,9 +74,13 @@ class Config:
             "disable_existing_loggers": False,
             "formatters": {
                 "standard": {
-                    "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
+                    "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+                },
                 "detailed": {
-                    "format": "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d: %(message)s"},
+                    "format": (
+                        "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d: %(message)s"
+                    )
+                },
             },
             "handlers": {
                 "console": {
@@ -88,8 +92,7 @@ class Config:
                     "level": self.LOG_LEVEL,
                     "class": "logging.handlers.RotatingFileHandler",
                     "filename": self.LOG_FILE,
-                    "maxBytes": self._parse_size(
-                        self.LOG_MAX_SIZE),
+                    "maxBytes": self._parse_size(self.LOG_MAX_SIZE),
                     "backupCount": self.LOG_BACKUP_COUNT,
                     "formatter": "detailed",
                     "encoding": "utf-8",
@@ -97,12 +100,11 @@ class Config:
             },
             "loggers": {
                 "": {
-                    "handlers": [
-                        "console",
-                        "file"],
+                    "handlers": ["console", "file"],
                     "level": self.LOG_LEVEL,
                     "propagate": False,
-                }},
+                }
+            },
         }
 
     def _parse_size(self, size_str: str) -> int:
@@ -148,7 +150,7 @@ class Config:
                 raise ValueError("最大并发文件数必须大于0")
 
             return True
-        except Exception as e:
+        except Exception:
             logging.error("配置验证失败: {e}")
             return False
 

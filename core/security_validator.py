@@ -202,9 +202,7 @@ class SecurityValidator:
             return ValidationResult(True, "安全命令", "low")
 
         # 对于不在白名单中的命令，标记为中等风险
-        return ValidationResult(
-            True, "命令不在安全白名单中: {first_command}", "medium"
-        )
+        return ValidationResult(True, "命令不在安全白名单中: {first_command}", "medium")
 
     def validate_script_path(self, script_path: str) -> ValidationResult:
         """
@@ -221,6 +219,7 @@ class SecurityValidator:
 
         # 检查是否为有效的Windows或Unix路径
         import os
+
         if not os.path.isabs(script_path):
             return ValidationResult(False, "脚本路径必须是绝对路径", "high")
 

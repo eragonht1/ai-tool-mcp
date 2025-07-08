@@ -112,7 +112,10 @@ class BaseDownloader(ABC):
         self.session = requests.Session()
         self.session.headers.update(
             {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                )
             }
         )
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -606,7 +609,7 @@ class FileDownloader(BaseDownloader):
                     }
                 )
 
-            except Exception as e:
+            except Exception:
                 # 如果获取尺寸失败，保持基本信息
                 self.logger.debug("无法获取图片尺寸: {str(e)}")
                 info["is_image"] = True

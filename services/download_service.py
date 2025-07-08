@@ -67,7 +67,11 @@ class DownloadService(BaseService):
                 self.logger.info("下载完成: %s", output_path)
 
                 if result["status"] == "success":
-                    return f"下载成功: {result['filepath']}\n文件类型: {result.get('content_type', 'unknown')}\n文件大小: {result['size']} 字节"
+                    return (
+                        f"下载成功: {result['filepath']}\n"
+                        f"文件类型: {result.get('content_type', 'unknown')}\n"
+                        f"文件大小: {result['size']} 字节"
+                    )
                 elif result["status"] == "skipped":
                     return f"文件已存在，跳过下载: {result['filepath']}"
                 return f"下载失败: {result['error']}"
@@ -143,7 +147,10 @@ class DownloadService(BaseService):
             result += f"类型: {info.get('content_type', 'unknown')}\n"
 
             if "file_size_mb" in info:
-                result += f"大小: {info['file_size_mb']} MB ({info['file_size_bytes']} 字节)\n"
+                result += (
+                    f"大小: {info['file_size_mb']} MB "
+                    f"({info['file_size_bytes']} 字节)\n"
+                )
 
             if "file_extension" in info:
                 result += f"扩展名: {info['file_extension']}\n"
@@ -177,7 +184,10 @@ class DownloadService(BaseService):
                 Field(description="保存的文件名，需与urls参数一一对应"),
             ],
             output_dir: Annotated[
-                str, Field(description=AbsolutePathValidator.get_directory_path_description())
+                str,
+                Field(
+                    description=AbsolutePathValidator.get_directory_path_description()
+                ),
             ] = None,
             max_concurrent: Annotated[
                 int, Field(description="多文件下载时的最大并发数，范围1-50")

@@ -57,7 +57,9 @@ class PowerShellService(FastMCP):
             if not is_valid:
                 return {
                     "success": False,
-                    "error": AbsolutePathValidator.format_error_message(working_directory, error_msg)
+                    "error": AbsolutePathValidator.format_error_message(
+                        working_directory, error_msg
+                    ),
                 }
 
             return await self._execute_command(
@@ -77,7 +79,9 @@ class PowerShellService(FastMCP):
             if not is_valid:
                 return {
                     "success": False,
-                    "error": AbsolutePathValidator.format_error_message(working_directory, error_msg)
+                    "error": AbsolutePathValidator.format_error_message(
+                        working_directory, error_msg
+                    ),
                 }
 
             try:

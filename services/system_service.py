@@ -33,7 +33,8 @@ class SystemService(BaseService):
             """获取系统信息
 
             Args:
-                basic_only: 如果为True，只返回基本的、安全的信息；如果为False，返回详细信息
+                basic_only: 如果为True，只返回基本的、安全的信息；
+                    如果为False，返回详细信息
             """
             try:
                 # 如果只需要基本信息，直接返回
@@ -71,7 +72,9 @@ class SystemService(BaseService):
                         self.system_monitor.get_development_environment_info
                     )
                     if "error" in dev_env_info:
-                        self.logger.warning(f"开发环境信息获取失败: {dev_env_info['error']}")
+                        self.logger.warning(
+                            f"开发环境信息获取失败: {dev_env_info['error']}"
+                        )
                         dev_env_info = {"development_environment": {}}
                 except Exception as e:
                     self.logger.warning(f"开发环境信息获取异常: {e}")
@@ -82,7 +85,9 @@ class SystemService(BaseService):
                     "computer_overview": computer_overview,
                     "network_info": network_info,
                     "hardware_info": hardware_info,
-                    "development_environment": dev_env_info.get("development_environment", {}),
+                    "development_environment": dev_env_info.get(
+                        "development_environment", {}
+                    ),
                 }
 
                 return {
@@ -132,10 +137,10 @@ if __name__ == "__main__":
 
         # Get service info
         info = await service.get_service_info()
-        print("Service info: {info}")
+        print(f"Service info: {info}")
 
         # List tools
         tools = await service.get_tools()
-        print("Available tools: {list(tools.keys())}")
+        print(f"Available tools: {list(tools.keys())}")
 
     asyncio.run(main())

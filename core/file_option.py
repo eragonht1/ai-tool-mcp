@@ -30,7 +30,7 @@ class FileOption:
         try:
             with open(file_path, "r", encoding=encoding) as f:
                 return f.read()
-        except Exception as e:
+        except Exception:
             return "读取文件失败: {str(e)}"
 
     @staticmethod

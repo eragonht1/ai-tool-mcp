@@ -46,7 +46,7 @@ class AIToolServer(FastMCP):
 
             self.logger.info("所有子服务设置完成")
 
-        except Exception as e:
+        except Exception:
             self.logger.error("设置子服务失败: {e}")
             raise
 
@@ -141,7 +141,7 @@ class AIToolServer(FastMCP):
                     # 尝试获取服务信息来检查健康状态
                     await service.get_tools()
                     health_status["services"][service_name] = "healthy"
-                except Exception as e:
+                except Exception:
                     health_status["services"][service_name] = "unhealthy: {str(e)}"
             else:
                 health_status["services"][service_name] = "not_initialized"
@@ -165,11 +165,11 @@ if __name__ == "__main__":
 
         # 显示服务信息
         info = await server.get_service_info()
-        print("主服务器启动成功: {info}")
+        print(f"主服务器启动成功: {info}")
 
         # 显示健康状态
         health = await server.get_health_status()
-        print("健康状态: {health}")
+        print(f"健康状态: {health}")
 
         return server
 

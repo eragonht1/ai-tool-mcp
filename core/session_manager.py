@@ -68,7 +68,7 @@ class SessionManager:
                 await self.cleanup_expired_sessions()
             except asyncio.CancelledError:
                 break
-            except Exception as e:
+            except Exception:
                 self.logger.error("清理过期会话时发生错误: {e}")
 
     async def create_session(self, working_directory: Optional[str] = None) -> str:
