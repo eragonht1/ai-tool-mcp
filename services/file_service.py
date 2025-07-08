@@ -32,7 +32,7 @@ class FileService(BaseService):
         """Register all file operation tools"""
 
         @self.tool()
-        async def read_file(
+        async def read(
             file_path: Annotated[
                 str,
                 Field(description=AbsolutePathValidator.get_windows_path_description()),
@@ -50,7 +50,7 @@ class FileService(BaseService):
             return await self._run_sync(self.file_option.read_file, file_path, encoding)
 
         @self.tool()
-        async def write_file(
+        async def write(
             file_path: Annotated[
                 str,
                 Field(description=AbsolutePathValidator.get_windows_path_description()),
@@ -76,7 +76,7 @@ class FileService(BaseService):
             )
 
         @self.tool()
-        async def append_file(
+        async def append(
             file_path: Annotated[
                 str,
                 Field(description=AbsolutePathValidator.get_windows_path_description()),
@@ -102,7 +102,7 @@ class FileService(BaseService):
             )
 
         @self.tool()
-        async def edit_file(
+        async def edit(
             file_path: Annotated[
                 str,
                 Field(description=AbsolutePathValidator.get_windows_path_description()),
@@ -133,7 +133,7 @@ class FileService(BaseService):
             )
 
         @self.tool()
-        async def create_directory(
+        async def mkdir(
             dir_paths: Annotated[
                 Union[str, List[str]],
                 Field(
@@ -191,7 +191,7 @@ class FileService(BaseService):
             }
 
         @self.tool()
-        async def delete_directory(
+        async def rmdir(
             dir_paths: Annotated[
                 Union[str, List[str]],
                 Field(
@@ -250,7 +250,7 @@ class FileService(BaseService):
             }
 
         @self.tool()
-        async def list_directory(
+        async def ls(
             dir_path: Annotated[
                 str,
                 Field(
@@ -277,7 +277,7 @@ class FileService(BaseService):
             )
 
         @self.tool()
-        async def copy_file(
+        async def copy(
             operations: Annotated[
                 Union[Dict[str, str], List[Dict[str, str]]],
                 Field(
@@ -370,7 +370,7 @@ class FileService(BaseService):
             }
 
         @self.tool()
-        async def move_file(
+        async def move(
             operations: Annotated[
                 Union[Dict[str, str], List[Dict[str, str]]],
                 Field(
@@ -463,7 +463,7 @@ class FileService(BaseService):
             }
 
         @self.tool()
-        async def delete_file(
+        async def delete(
             file_paths: Annotated[
                 Union[str, List[str]],
                 Field(
@@ -521,7 +521,7 @@ class FileService(BaseService):
             }
 
         @self.tool()
-        async def get_file_info(
+        async def info(
             file_path: Annotated[
                 str,
                 Field(description=AbsolutePathValidator.get_windows_path_description()),
@@ -541,7 +541,7 @@ class FileService(BaseService):
             return await self._run_sync(self.file_option.get_file_info, file_path)
 
         @self.tool()
-        async def change_file_permissions(
+        async def chmod(
             operations: Annotated[
                 Union[Dict[str, Union[str, int]], List[Dict[str, Union[str, int]]]],
                 Field(

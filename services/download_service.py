@@ -28,7 +28,7 @@ class DownloadService(BaseService):
 
         # 确保默认下载目录存在
         self.default_download_dir = config.DOWNLOAD_DIR
-        Path(self.default_download_dir).mkdir(parents=True, exist_ok=True)
+        # Path(self.default_download_dir).mkdir(parents=True, exist_ok=True)  # 按需创建，不预先创建
 
         # 注册工具
         self._register_tools()
@@ -174,7 +174,7 @@ class DownloadService(BaseService):
         """注册所有下载相关工具"""
 
         @self.tool()
-        def download_files(
+        def get(
             urls: Annotated[
                 Union[str, List[str]],
                 Field(description="文件URL，可以是单个URL字符串或URL数组"),
@@ -234,7 +234,7 @@ class DownloadService(BaseService):
             )
 
         @self.tool()
-        def get_file_info(
+        def info(
             url: Annotated[str, Field(description="文件的URL地址")],
             timeout: Annotated[
                 int, Field(description="请求超时时间，单位秒，范围1-300")

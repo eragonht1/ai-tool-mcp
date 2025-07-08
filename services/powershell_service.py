@@ -7,6 +7,7 @@ PowerShell management MCP service
 
 import asyncio
 import logging
+import shutil
 import subprocess
 import time
 from typing import Annotated, Any, Dict, Optional
@@ -29,52 +30,53 @@ class PowerShellService(FastMCP):
         self.security_validator = SecurityValidator()
         self.logger = logging.getLogger(__name__)
 
+        # 检测并设置PowerShell可执行文件
+        self.powershell_executable = self._detect_powershell_executable()
+        self.logger.info(f"使用PowerShell执行器: {self.powershell_executable}")
+
         # Register all tools
         self._register_tools()
 
         self.logger.info("PowerShell service initialized: {name}")
 
+    def _detect_powershell_executable(self) -> str:
+        """检测可用的PowerShell可执行文件"""
+        for ps_path in config.PS_EXECUTABLE_PATHS:
+            try:
+                # 检查文件是否存在
+                if ps_path.startswith(('C:', 'D:', 'E:')):  # 绝对路径
+                    import os
+                    if os.path.exists(ps_path):
+                        self.logger.info(f"找到PowerShell: {ps_path}")
+                        return ps_path
+                else:  # 相对路径，使用shutil.which检查
+                    if shutil.which(ps_path):
+                        self.logger.info(f"找到PowerShell: {ps_path}")
+                        return ps_path
+            except Exception as e:
+                self.logger.debug(f"检查PowerShell路径失败 {ps_path}: {e}")
+                continue
+
+        # 如果都没找到，使用默认的powershell.exe
+        self.logger.warning("未找到PowerShell 7.x，使用传统PowerShell 5.1")
+        return "powershell.exe"
+
     def _register_tools(self):
         """Register all PowerShell management tools"""
 
         @self.tool()
-        async def execute_command(
+        async def run(
             command: Annotated[str, Field(description="要执行的PowerShell命令或脚本")],
             working_directory: Annotated[
                 str,
                 Field(description="绝对路径（必须是完整路径）"),
             ],
-            session_id: Annotated[
-                Optional[str], Field(description="会话ID，如果不指定则使用临时会话")
-            ] = None,
             timeout: Annotated[
                 int, Field(description="命令执行超时时间，单位秒，范围1-300")
             ] = 30,
         ) -> Dict[str, Any]:
-            """执行PowerShell命令（必须指定工作目录的绝对路径）"""
-            # 验证工作目录路径（现在是必需参数）
-            is_valid, error_msg = AbsolutePathValidator.validate_path(working_directory)
-            if not is_valid:
-                return {
-                    "success": False,
-                    "error": AbsolutePathValidator.format_error_message(
-                        working_directory, error_msg
-                    ),
-                }
-
-            return await self._execute_command(
-                command, session_id, timeout, working_directory
-            )
-
-        @self.tool()
-        async def create_session(
-            working_directory: Annotated[
-                str,
-                Field(description="绝对路径（必须是完整路径）"),
-            ],
-        ) -> Dict[str, Any]:
-            """创建新的PowerShell会话（必须指定工作目录的绝对路径）"""
-            # 验证工作目录路径（现在是必需参数）
+            """在新会话中运行PowerShell命令（自动创建会话并执行命令）"""
+            # 验证工作目录路径
             is_valid, error_msg = AbsolutePathValidator.validate_path(working_directory)
             if not is_valid:
                 return {
@@ -85,27 +87,35 @@ class PowerShellService(FastMCP):
                 }
 
             try:
-                session_id = await self.session_manager.create_session(
-                    working_directory
-                )
-                session_info = await self.session_manager.get_session(session_id)
+                # 自动创建新会话
+                session_id = await self.session_manager.create_session(working_directory)
+                self.logger.info(f"为命令执行创建新会话: {session_id}")
 
-                return {
-                    "success": True,
-                    "session_id": session_id,
-                    "session_info": {
-                        "session_id": session_info.session_id,
-                        "created_at": session_info.created_at.isoformat(),
-                        "status": session_info.status,
-                        "working_directory": session_info.working_directory,
-                    },
-                }
+                # 在新会话中执行命令
+                result = await self._execute_command(
+                    command, session_id, timeout, working_directory
+                )
+
+                # 添加会话信息到返回结果
+                session_info = await self.session_manager.get_session(session_id)
+                result["session_id"] = session_id
+                result["session_info"] = {
+                    "session_id": session_info.session_id,
+                    "created_at": session_info.created_at.isoformat(),
+                    "status": session_info.status,
+                    "working_directory": session_info.working_directory,
+                } if session_info else None
+
+                return result
+
             except Exception as e:
-                self.logger.error("Create session failed: {e}")
+                self.logger.error(f"运行命令失败: {e}")
                 return {"success": False, "error": str(e)}
 
+
+
         @self.tool()
-        async def destroy_session(
+        async def destroy(
             session_id: Annotated[str, Field(description="要销毁的会话ID")],
         ) -> Dict[str, Any]:
             """销毁PowerShell会话"""
@@ -124,7 +134,7 @@ class PowerShellService(FastMCP):
                 return {"success": False, "error": str(e)}
 
         @self.tool()
-        async def list_sessions() -> Dict[str, Any]:
+        async def list() -> Dict[str, Any]:
             """列出所有PowerShell会话"""
             try:
                 sessions = await self.session_manager.list_sessions()
@@ -153,15 +163,7 @@ class PowerShellService(FastMCP):
                 self.logger.error("List sessions failed: {e}")
                 return {"success": False, "error": str(e)}
 
-        @self.tool()
-        async def get_session_stats() -> Dict[str, Any]:
-            """获取会话统计信息"""
-            try:
-                stats = await self.session_manager.get_session_stats()
-                return {"success": True, "stats": stats}
-            except Exception as e:
-                self.logger.error("Get session stats failed: {e}")
-                return {"success": False, "error": str(e)}
+
 
     async def _execute_command(
         self,
@@ -197,36 +199,81 @@ class PowerShellService(FastMCP):
             # 新逻辑：用户指定的working_directory参数优先级最高
             cwd = working_directory
 
-            # Build PowerShell command (absolutely hidden)
-            ps_command = [
-                "powershell.exe",
+            # Execute command (可见窗口模式) - Version 4.0
+            self.logger.info(f"执行可见窗口PowerShell命令: {command}")
+            self.logger.info(f"使用执行器: {self.powershell_executable}")
+
+            # 修改命令，让PowerShell窗口保持可见并等待用户关闭
+            enhanced_command = f'''
+Write-Host "=== PowerShell 7.x 执行窗口 ===" -ForegroundColor Green
+Write-Host "命令: {command}" -ForegroundColor Yellow
+Write-Host "工作目录: {cwd}" -ForegroundColor Cyan
+Write-Host "时间: $(Get-Date)" -ForegroundColor Magenta
+Write-Host ""
+Write-Host "按任意键开始执行..." -ForegroundColor White
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+
+try {{
+    {command}
+    Write-Host ""
+    Write-Host "=== 命令执行完成 ===" -ForegroundColor Green
+}} catch {{
+    Write-Host ""
+    Write-Host "=== 命令执行出错 ===" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+}}
+
+Write-Host ""
+Write-Host "按任意键关闭窗口..." -ForegroundColor White
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+            '''
+
+            # 使用新的命令参数，让窗口可见且需要手动关闭
+            ps_command_visible = [
+                self.powershell_executable,
                 "-ExecutionPolicy",
                 getattr(config, "PS_EXECUTION_POLICY", "RemoteSigned"),
                 "-NoProfile",
-                "-NonInteractive",
-                "-WindowStyle",
-                "Hidden",
                 "-Command",
-                command,
+                enhanced_command,
             ]
 
-            # Execute command (absolutely hidden mode) - Version 3.0
-            self.logger.info("执行绝对隐藏模式PowerShell命令: {command}")
-            result = subprocess.run(
-                ps_command,
+            # 创建真正可见的PowerShell窗口
+            # 使用Popen来启动一个独立的可见窗口，不重定向输出让用户能看到内容
+            process = subprocess.Popen(
+                ps_command_visible,
                 cwd=cwd,
-                capture_output=True,
+                # 移除输出重定向，让内容显示在可见窗口中
+                # stdout=subprocess.PIPE,
+                # stderr=subprocess.PIPE,
                 text=True,
-                timeout=timeout,
-                check=False,
                 shell=False,
-                stdin=subprocess.DEVNULL,
-                creationflags=(
-                    subprocess.CREATE_NO_WINDOW
-                    if hasattr(subprocess, "CREATE_NO_WINDOW")
-                    else 0
-                ),
+                # 确保窗口可见 - 使用CREATE_NEW_CONSOLE创建新的控制台窗口
+                creationflags=subprocess.CREATE_NEW_CONSOLE if hasattr(subprocess, 'CREATE_NEW_CONSOLE') else 0,
             )
+
+            # 等待进程完成并获取结果
+            try:
+                # 由于没有重定向输出，我们只能等待进程完成并获取返回码
+                return_code = process.wait(timeout=timeout)
+
+                # 由于输出直接显示在窗口中，我们无法捕获具体内容
+                # 但可以提供一个友好的状态信息
+                stdout = f"命令已在可见窗口中执行完成。返回码: {return_code}"
+                stderr = "" if return_code == 0 else "命令执行可能有错误，请查看可见窗口"
+
+                # 模拟subprocess.run的返回结果
+                class MockResult:
+                    def __init__(self, returncode, stdout, stderr):
+                        self.returncode = returncode
+                        self.stdout = stdout
+                        self.stderr = stderr
+
+                result = MockResult(return_code, stdout, stderr)
+
+            except subprocess.TimeoutExpired:
+                process.kill()
+                raise subprocess.TimeoutExpired(ps_command_visible, timeout)
 
             execution_time = time.time() - start_time
 

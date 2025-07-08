@@ -101,7 +101,7 @@ class SystemService(BaseService):
                 return {"error": str(e)}
 
         @self.tool()
-        async def get_basic_system_info() -> Dict[str, Any]:
+        async def info() -> Dict[str, Any]:
             """获取系统环境基本信息"""
             try:
                 # 获取基本系统信息
