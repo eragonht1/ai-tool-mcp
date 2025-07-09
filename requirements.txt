@@ -1,0 +1,46 @@
+# AI-Tool MCP 项目依赖
+# 基于FastMCP的AI工具集合，提供文件操作、系统监控、下载和PowerShell功能
+
+# ===== 核心框架 =====
+# FastMCP - MCP协议Python SDK
+fastmcp>=0.1.0
+
+# ===== 异步和类型支持 =====
+# 异步文件操作
+aiofiles>=23.0.0
+
+# 类型注解增强
+pydantic>=2.0.0
+
+# ===== 网络和下载功能 =====
+# HTTP请求库
+requests>=2.31.0
+
+# URL验证
+validators>=0.22.0
+
+# ===== 系统监控功能 =====
+# 系统信息获取
+psutil>=5.9.0
+
+# 图像处理（用于下载文件验证）
+Pillow>=10.0.0
+
+# ===== GUI界面功能 =====
+# 现代化Tkinter界面
+customtkinter>=5.2.0
+
+# ===== 开发和测试工具 =====
+# 代码格式化和检查
+ruff>=0.1.0
+
+# 测试框架
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# ===== 可选依赖 =====
+# GPU监控（可选，如果需要GPU信息）
+# GPUtil>=1.4.0
+
+# 环境变量管理（可选）
+# python-dotenv>=1.0.0

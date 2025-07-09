@@ -14,6 +14,7 @@ from fastmcp import FastMCP
 
 from services.download_service import DownloadService
 from services.file_service import FileService
+from services.powershell_service import PowerShellService
 from services.system_service import SystemService
 
 
@@ -28,6 +29,7 @@ class AIToolServer(FastMCP):
         self.file_service: Optional[FileService] = None
         self.download_service: Optional[DownloadService] = None
         self.system_service: Optional[SystemService] = None
+        self.powershell_service: Optional[PowerShellService] = None
 
         self.logger.info("AI-Tool主服务器初始化: {name}")
 
@@ -64,6 +66,10 @@ class AIToolServer(FastMCP):
         self.system_service = SystemService("system_service")
         self.logger.info("✓ 系统信息获取服务创建完成")
 
+        # PowerShell服务
+        self.powershell_service = PowerShellService("powershell_service")
+        self.logger.info("✓ PowerShell服务创建完成")
+
     async def _import_services(self):
         """使用FastMCP的import_server功能整合服务"""
         self.logger.info("开始整合子服务...")
@@ -83,6 +89,11 @@ class AIToolServer(FastMCP):
             await self.import_server(prefix="system", server=self.system_service)
             self.logger.info("✓ 系统信息获取服务已整合")
 
+        # 导入PowerShell服务 (前缀: ps_)
+        if self.powershell_service:
+            await self.import_server(prefix="ps", server=self.powershell_service)
+            self.logger.info("✓ PowerShell服务已整合")
+
     async def get_service_info(self) -> Dict[str, Any]:
         """获取主服务器信息"""
         tools = await self.get_tools()
@@ -101,6 +112,8 @@ class AIToolServer(FastMCP):
             services.append("download")
         if self.system_service:
             services.append("system")
+        if self.powershell_service:
+            services.append("powershell")
 
         return {
             "name": self.name,
@@ -119,6 +132,7 @@ class AIToolServer(FastMCP):
             "file": self.file_service,
             "download": self.download_service,
             "system": self.system_service,
+            "powershell": self.powershell_service,
         }
 
         for service_name, service in services.items():
