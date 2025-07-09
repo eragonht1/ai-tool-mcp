@@ -47,18 +47,6 @@ class Config:
         )
         self.ADMIN_REQUIRED = os.getenv("ADMIN_REQUIRED", "true").lower() == "true"
 
-        # PowerShell配置
-        self.PS_EXECUTION_POLICY = os.getenv("PS_EXECUTION_POLICY", "RemoteSigned")
-        self.PS_MAX_SESSIONS = 3  # 强制设置为3个，不受环境变量影响
-        self.PS_SESSION_TIMEOUT = int(os.getenv("PS_SESSION_TIMEOUT", "300"))  # 5分钟
-
-        # PowerShell版本配置
-        self.PS_EXECUTABLE_PATHS = [
-            r"C:\Program Files\PowerShell\7\pwsh.exe",  # PowerShell 7.x 优先
-            "pwsh.exe",  # 系统PATH中的PowerShell 7.x
-            "powershell.exe"  # 传统Windows PowerShell 5.1 回退
-        ]
-
         # 系统监控配置
         self.MONITOR_INTERVAL = int(os.getenv("MONITOR_INTERVAL", "5"))  # 秒
         self.CPU_THRESHOLD = float(os.getenv("CPU_THRESHOLD", "80.0"))  # %

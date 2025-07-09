@@ -1,8 +1,8 @@
 # AI-Tool MCP
 
-基于FastMCP的AI工具集合，提供文件操作、PowerShell管理、系统监控和下载功能。
+基于FastMCP的AI工具集合，提供文件操作、系统监控和下载功能。
 
-**🎯 总计18个工具，功能完整，架构清晰**
+**🎯 总计15个工具，功能完整，架构清晰**
 
 ## 功能特性
 
@@ -12,12 +12,6 @@
 - **文件管理**: 复制、移动、删除、权限修改
 - **批量支持**: 所有操作均支持批量处理
 - **安全保障**: 强制绝对路径，防止路径遍历
-
-### ⚡ PowerShell管理服务 (ps_*) - 3个工具
-- **可视化执行**: PowerShell 7.x可见窗口执行，用户可实时查看
-- **会话管理**: 创建、销毁、列表管理
-- **安全验证**: 命令安全性检查和风险评估
-- **交互友好**: 彩色输出，按键交互控制
 
 ### 📥 下载服务 (download_*) - 2个工具
 - **智能下载**: 多文件并发下载，支持重试和超时
@@ -93,19 +87,6 @@ file_mkdir(dir_paths=["C:\\new\\folder1", "C:\\new\\folder2"])
 file_info(file_path="C:\\path\\to\\file.txt")
 ```
 
-### ⚡ PowerShell管理
-```python
-# 执行PowerShell命令（可见窗口）
-ps_run(
-    command="Get-ChildItem | Format-Table -AutoSize",
-    working_directory="C:\\Projects"
-)
-
-# 会话管理
-ps_list()  # 列出所有会话
-ps_destroy(session_id="session-id")  # 销毁指定会话
-```
-
 ### 📥 下载文件
 ```python
 # 单文件下载
@@ -157,13 +138,10 @@ ai-tool-mcp/
 │   ├── file_downloader.py # 文件下载器
 │   ├── file_option.py     # 文件操作
 │   ├── path_validator.py  # 路径验证
-│   ├── security_validator.py # 安全验证
-│   ├── session_manager.py # 会话管理
 │   └── system_monitor.py  # 系统监控
 ├── services/              # 服务模块
 │   ├── base_service.py    # 基础服务类
 │   ├── file_service.py    # 文件操作服务
-│   ├── powershell_service.py # PowerShell管理服务
 │   ├── download_service.py # 下载服务
 │   └── system_service.py  # 系统监控服务
 ├── tests/                 # 测试文件
@@ -201,10 +179,9 @@ ruff format .
 | 服务 | 工具数量 | 主要功能 |
 |------|----------|----------|
 | 文件操作 | 12个 | 完整的文件和目录管理 |
-| PowerShell | 3个 | 命令执行和会话管理 |
 | 下载服务 | 2个 | 文件下载和信息获取 |
 | 系统监控 | 1个 | 系统信息获取 |
-| **总计** | **18个** | **功能完整的AI工具集** |
+| **总计** | **15个** | **功能完整的AI工具集** |
 
 ## 📄 许可证
 

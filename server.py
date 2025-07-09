@@ -14,7 +14,6 @@ from fastmcp import FastMCP
 
 from services.download_service import DownloadService
 from services.file_service import FileService
-from services.powershell_service import PowerShellService
 from services.system_service import SystemService
 
 
@@ -28,7 +27,6 @@ class AIToolServer(FastMCP):
         # 子服务实例
         self.file_service: Optional[FileService] = None
         self.download_service: Optional[DownloadService] = None
-        self.powershell_service: Optional[PowerShellService] = None
         self.system_service: Optional[SystemService] = None
 
         self.logger.info("AI-Tool主服务器初始化: {name}")
@@ -62,10 +60,6 @@ class AIToolServer(FastMCP):
         self.download_service = DownloadService("download_service")
         self.logger.info("✓ 下载助手服务创建完成")
 
-        # PowerShell管理服务
-        self.powershell_service = PowerShellService("powershell_service")
-        self.logger.info("✓ PowerShell管理服务创建完成")
-
         # 系统信息获取服务
         self.system_service = SystemService("system_service")
         self.logger.info("✓ 系统信息获取服务创建完成")
@@ -83,11 +77,6 @@ class AIToolServer(FastMCP):
         if self.download_service:
             await self.import_server(prefix="download", server=self.download_service)
             self.logger.info("✓ 下载助手服务已整合")
-
-        # 导入PowerShell管理服务 (前缀: ps_)
-        if self.powershell_service:
-            await self.import_server(prefix="ps", server=self.powershell_service)
-            self.logger.info("✓ PowerShell管理服务已整合")
 
         # 导入系统信息获取服务 (前缀: system_)
         if self.system_service:
@@ -110,8 +99,6 @@ class AIToolServer(FastMCP):
             services.append("file")
         if self.download_service:
             services.append("download")
-        if self.powershell_service:
-            services.append("ps")
         if self.system_service:
             services.append("system")
 
@@ -131,7 +118,6 @@ class AIToolServer(FastMCP):
         services = {
             "file": self.file_service,
             "download": self.download_service,
-            "ps": self.powershell_service,
             "system": self.system_service,
         }
 
